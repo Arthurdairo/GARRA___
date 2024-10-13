@@ -1,0 +1,163 @@
+-- Schiwft base para organização das funções
+local Schiwft = {}
+local ActiveModules = {
+    AutoFarm = false,
+    FruitFinder = false,
+    AutoQuest = false,
+    AutoChest = false
+}
+
+-- Função para alternar (ativar/desativar) módulos
+function Schiwft:Toggle(moduleName)
+    if ActiveModules[moduleName] ~= nil then
+        ActiveModules[moduleName] = not ActiveModules[moduleName]
+        print(moduleName .. " agora está " .. (ActiveModules[moduleName] and "Ativado" or "Desativado"))
+    else
+        print("Módulo " .. moduleName .. " não existe.")
+    end
+end
+
+-- Função para voar até a fruta mais próxima (módulo FruitFinder)
+function Schiwft:FruitFinder()
+    while ActiveModules.FruitFinder do
+        print("Procurando frutas...")
+        -- Chamar aqui a função de encontrar frutas (da versão anterior)
+        -- irAteFrutaMaisProxima() -- Chamada de função (coloque a lógica da função aqui)
+        
+        wait(10) -- Checa a cada 10 segundos
+    end
+end
+
+-- Função para pegar missões e ir aos mobs (módulo AutoQuest)
+function Schiwft:AutoQuest()
+    while ActiveModules.AutoQuest do
+        print("Auto Quest ativo. Indo pegar missões...")
+        -- Chamar aqui a função de pegar missões e ir até os mobs
+        -- autoFarmMissao() -- Chamada de função (coloque a lógica da função aqui)
+
+        wait(15) -- Aguardar 15 segundos antes de tentar novamente
+    end
+end
+
+-- Função para farmar mobs automaticamente (módulo AutoFarm)
+function Schiwft:AutoFarm()
+    while ActiveModules.AutoFarm do
+        print("Auto Farm ativo. Farmando mobs...")
+        -- Chamar aqui a função de farmar mobs
+        -- irAteMobs() -- Chamada de função (coloque a lógica da função aqui)
+
+        wait(10) -- Aguardar 10 segundos antes de tentar novamente
+    end
+end
+
+-- Função para Auto Chest
+function Schiwft:AutoChest()
+    -- Configurações do Auto Chest
+    _G.Type = "all" -- 1, 2, 3, or all
+    _G.Maxtime = 60 -- Tempo máximo para coletar um baú
+    _G.DivisonAmount = 150 -- Velocidade de movimentação
+
+    local ts = game:GetService("TweenService")
+    local plr = game.Players.LocalPlayer
+    local function char()
+        return plr.Character
+    end
+    local amounts = {
+        ["Attempted"] = 0,
+        ["Completed"] = 0,
+        ["Failed"] = 0,
+        ["ToFar"] = 0
+    }
+
+    -- Enquanto o módulo AutoChest estiver ativado
+    while ActiveModules.AutoChest do
+        for i, v in pairs(game.Workspace:GetChildren()) do
+            local plrmoney = plr.Data.Beli.Value
+            if (_G.Type == "all" and string.find(v.Name, "Chest")) or (_G.Type == 1 and string.find(v.Name, "Chest1")) or (_G.Type == 2 and string.find(v.Name, "Chest2")) or (_G.Type == 3 and string.find(v.Name, "Chest3")) then
+                local dist = (char().HumanoidRootPart.Position - v.Position).Magnitude / _G.DivisonAmount
+                amounts["Attempted"] = amounts["Attempted"] + 1
+                if dist < _G.Maxtime then
+                    local twe = ts:Create(char().HumanoidRootPart, TweenInfo.new(dist, Enum.EasingStyle.Linear), {CFrame = v.CFrame})
+                    twe:Play()
+                    print("attempting", v:GetFullName(), "distance is", dist)
+                    wait(dist)
+                    firetouchinterest(char().Head, v, 0)
+                    if plr.Data.Beli.Value == plrmoney then
+                        amounts["Failed"] = amounts["Failed"] + 1
+                    else
+                        amounts["Completed"] = amounts["Completed"] + 1
+                    end
+                else
+                    print("ignoring", v:GetFullName(), "distance too far (" .. dist .. ")")
+                    amounts["ToFar"] = amounts["ToFar"] + 1
+                end
+            end
+        end
+
+        for i, v in pairs(amounts) do
+            print(i, v)
+        end
+        print('failed could be inaccurate!!')
+
+        wait(10) -- Rechecar baús a cada 10 segundos
+    end
+end
+
+-- Função principal para iniciar o Schiwft
+function Schiwft:Start()
+    print("Schiwft iniciado!")
+    -- Este script irá continuamente verificar o estado dos módulos e executá-los quando ativados
+
+    -- Loop infinito para controlar a execução das funções ativas
+    while true do
+        -- Verifica se o módulo AutoFarm está ativado
+        if ActiveModules.AutoFarm then
+            Schiwft:AutoFarm()
+        end
+
+        -- Verifica se o módulo AutoQuest está ativado
+        if ActiveModules.AutoQuest then
+            Schiwft:AutoQuest()
+        end
+
+        -- Verifica se o módulo FruitFinder está ativado
+        if ActiveModules.FruitFinder then
+            Schiwft:FruitFinder()
+        end
+
+        -- Verifica se o módulo AutoChest está ativado
+        if ActiveModules.AutoChest then
+            Schiwft:AutoChest()
+        end
+
+        wait(1) -- Espera para checar novamente
+    end
+end
+
+-- Comandos para ativar/desativar as funções
+function Schiwft:Commands()
+    print("Comandos disponíveis: ")
+    print("!farm - Ativar/Desativar Auto Farm")
+    print("!quest - Ativar/Desativar Auto Quest")
+    print("!fruta - Ativar/Desativar Fruit Finder")
+    print("!chest - Ativar/Desativar Auto Chest")
+    
+    -- Exemplos de como alternar (toggle) os módulos com comandos
+    local playerInput = "!chest" -- Simulando um input do jogador
+
+    if playerInput == "!farm" then
+        Schiwft:Toggle("AutoFarm")
+    elseif playerInput == "!quest" then
+        Schiwft:Toggle("AutoQuest")
+    elseif playerInput == "!fruta" then
+        Schiwft:Toggle("FruitFinder")
+    elseif playerInput == "!chest" then
+        Schiwft:Toggle("AutoChest")
+    else
+        print("Comando desconhecido!")
+    end
+end
+
+-- Inicializar o Schiwft e comandos
+Schiwft:Start() -- Começa o ciclo de ativação dos módulos
+Schiwft:Commands() -- Exibe comandos disponíveis para o jogador
